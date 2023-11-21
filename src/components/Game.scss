@@ -1,0 +1,85 @@
+:root {
+  --color-dark-purple: hsl(222, 20%, 10%);
+  --color-white-hsl: 0, 0%, 100%;
+  --color-green-800-hsl: 120, 100%, 34%;
+  --color-red-800-hsl: 0, 100%, 34%;
+  --color-bg: var(--color-dark-purple);
+  --color-fg: hsl(var(--color-white-hsl));
+}
+.game {
+  color: var(--color-fg);
+  background-color: var(--color-bg);
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  justify-content: center;
+}
+.game-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  align-items: center;
+  justify-content: center;
+}
+.question {
+  font-size: 2rem;
+  text-align: center;
+}
+.answer {
+  font-size: 1.6rem;
+  height: 40px;
+  text-align: center;
+  width: 100px;
+}
+.round {
+  --size: 80px;
+  border: none;
+  font-size: 1.2rem;
+  height: var(--size);
+  width: var(--size);
+  border-radius: var(--size);
+}
+.next {
+  background-color: hsl(var(--color-green-800-hsl));
+  color: hsl(var(--color-white-hsl));
+}
+.retry {
+  color: hsl(var(--color-white-hsl));
+  background-color: hsl(var(--color-red-800-hsl));
+}
+.play {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  justify-content: center;
+  gap: 10px;
+  background-color: hsl(var(--color-green-800-hsl));
+  border: none;
+  border-radius: 8px;
+  color: hsl(var(--color-white-hsl));
+  width: 128px;
+  height: 74px;
+}
+.submit {
+  background-color: hsl(var(--color-green-800-hsl));
+  color: hsl(var(--color-white-hsl));
+
+  &:disabled {
+    color: hsla(var(--color-white-hsl), 0.3);
+    background-color: hsla(var(--color-green-800-hsl), 0.4);
+  }
+}
+.status {
+  height: 40px;
+}
+.status-icon {
+  height: 40px;
+  font-size: 40px;
+}
+.scoreboard {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
