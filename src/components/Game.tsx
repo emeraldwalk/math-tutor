@@ -70,6 +70,8 @@ export function Game() {
               disabled={state.status !== 'unanswered'}
               ref={inputRef}
               type="number"
+              inputmode="numeric"
+              pattern="[0-9]*"
               value={answer()}
               onInput={(e) => setAnswer(e.currentTarget.value)}
             />
