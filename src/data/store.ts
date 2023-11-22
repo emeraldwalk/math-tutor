@@ -4,10 +4,12 @@ import type { Problem, Round } from './model'
 const emojiIncorrect = ['😔', '😳', '😫']
 const emojiCorrect = ['😁', '🥳', '🥰']
 
+const FULL_QUESTION_SCORE = 100
+const LOCAL_STORAGE_SCORE_KEY = 'math-tutor.score'
+
 export const [state, setState] = createStore({
+  autoProgress: true,
   remaining: [] as Problem[],
-  correct: [] as Problem[],
-  incorrect: [] as Problem[],
   rounds: [] as Round[],
 
   status: 'unanswered' as 'unanswered' | 'correct' | 'incorrect',
@@ -16,12 +18,31 @@ export const [state, setState] = createStore({
     return this.remaining[0]
   },
 
-  get score(): [number, number] {
-    const offset = this.status === 'correct' ? 1 : 0
-    return [
-      this.correct.length + offset,
-      this.correct.length + this.incorrect.length + 1,
-    ]
+  get highScore(): number {
+    return Number(localStorage.getItem(LOCAL_STORAGE_SCORE_KEY) || '0')
+  },
+
+  get score(): {
+    answered: number
+    missed: number
+    total: number
+    score: number
+  } {
+    const round = this.rounds.at(-1)
+    if (round == null) {
+      return { answered: 0, missed: 0, total: 0, score: 0 }
+    }
+
+    const weight = this.current?.weight ?? 0
+
+    return {
+      answered: round.correct + (this.status === 'correct' ? 1 : 0),
+      missed: round.incorrect + (this.status === 'incorrect' ? 1 : 0),
+      total: round.correct + round.incorrect + 1,
+      score:
+        round.score +
+        (this.status === 'correct' ? FULL_QUESTION_SCORE * weight : 0),
+    }
   },
 
   get statusIcon(): string {
@@ -65,21 +86,48 @@ export const [state, setState] = createStore({
     const isCorrect = this.status === 'correct'
 
     setState('status', 'unanswered')
-    setState('remaining', (prev) => prev.slice(1))
-    setState(isCorrect ? 'correct' : 'incorrect', (prev) => [...prev, current])
+
+    // Update current round
+    setState('rounds', this.rounds.length - 1, (prev) => {
+      if (isCorrect) {
+        return {
+          ...prev,
+          correct: prev.correct + 1,
+          score: prev.score + FULL_QUESTION_SCORE * current.weight,
+        }
+      }
+
+      return { ...prev, incorrect: prev.incorrect + 1 }
+    })
+
+    setState('remaining', (prev) => {
+      const first = prev[0]
+
+      // If answer is incorrect, remove first item and decrease the weight of last
+      if (!isCorrect && first) {
+        return [...prev.slice(1), { ...first, weight: first.weight / 2 }]
+      }
+
+      // Update without first item
+      return prev.slice(1)
+    })
+
+    if (this.remaining.length === 0) {
+      const lastHighScore = this.highScore
+      const highScore = this.rounds.at(-1)?.score ?? 0
+      localStorage.setItem(
+        LOCAL_STORAGE_SCORE_KEY,
+        String(Math.max(highScore, lastHighScore)),
+      )
+    }
   },
 
   reset(initialProblems: Problem[]) {
-    if (state.correct.length || state.incorrect.length) {
-      setState('rounds', (rounds) => [
-        ...rounds,
-        { correct: this.correct.length, incorrect: this.incorrect.length },
-      ])
-    }
-
+    setState('rounds', (rounds) => [
+      ...rounds,
+      { correct: 0, incorrect: 0, score: 0 },
+    ])
     setState('remaining', initialProblems)
-    setState('correct', [])
-    setState('incorrect', [])
   },
 
   retry() {

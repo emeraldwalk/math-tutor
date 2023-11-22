@@ -1,9 +1,11 @@
-import { createEffect, createSignal, on } from 'solid-js'
-import { state, type Problem, setState } from '../data'
+import { createEffect, createSignal, on, onCleanup } from 'solid-js'
+import { state, type Problem } from '../data'
 import './Game.scss'
 import { VsCheck, VsChromeClose, VsRefresh } from 'solid-icons/vs'
+import { ScoreCard } from '.'
 
 function initialProblems(): Problem[] {
+  // return [forN(2)(1), forN(2)(2)]
   const map = {
     2: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18],
     3: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
@@ -13,6 +15,7 @@ function initialProblems(): Problem[] {
     return (i: number) => {
       return {
         type: 'multiplication' as 'multiplication',
+        weight: 1,
         m1: n,
         m2: i,
         p: n * i,
@@ -40,9 +43,10 @@ export function Game() {
   }
 
   const onRetry = () => {
-    setAnswer('')
-    state.retry()
-    rerun()
+    // state.retry()
+    // setAnswer('')
+    // rerun()
+    onNext()
   }
 
   const onNext = () => {
@@ -54,6 +58,14 @@ export function Game() {
   createEffect(
     on(depend, () => {
       inputRef?.focus()
+
+      if (state.autoProgress && state.status !== 'unanswered') {
+        const timeout = setTimeout(() => {
+          onNext()
+        }, 1500)
+
+        onCleanup(() => clearTimeout(timeout))
+      }
     }),
   )
 
@@ -96,16 +108,19 @@ export function Game() {
           </>
         )}
         {state.current == null && (
-          <button class="play" onClick={onReset}>
-            {state.correct.length || state.incorrect.length ? (
-              <>
-                Play Again
-                <VsRefresh size={20} />
-              </>
-            ) : (
-              'Play'
-            )}
-          </button>
+          <>
+            {state.rounds.length ? <ScoreCard /> : null}
+            <button class="play" onClick={onReset}>
+              {state.rounds.length ? (
+                <>
+                  Play Again
+                  <VsRefresh size={20} />
+                </>
+              ) : (
+                'Play'
+              )}
+            </button>
+          </>
         )}
         <span class="status">
           {state.status !== 'unanswered' && state.status}
@@ -113,8 +128,7 @@ export function Game() {
         <span class="status-icon">{state.statusIcon}</span>
         {state.current && (
           <footer class="scoreboard">
-            <span>Round {state.rounds.length + 1}</span>
-            Score {state.score[0]} / {state.score[1]}
+            <ScoreCard />
           </footer>
         )}
       </div>
