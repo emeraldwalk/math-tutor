@@ -27,10 +27,11 @@ export const [state, setState] = createStore({
     missed: number
     total: number
     score: number
+    remaining: number
   } {
     const round = this.rounds.at(-1)
     if (round == null) {
-      return { answered: 0, missed: 0, total: 0, score: 0 }
+      return { answered: 0, missed: 0, total: 0, score: 0, remaining: 0 }
     }
 
     const weight = this.current?.weight ?? 0
@@ -42,6 +43,7 @@ export const [state, setState] = createStore({
       score:
         round.score +
         (this.status === 'correct' ? FULL_QUESTION_SCORE * weight : 0),
+      remaining: this.remaining.length + (this.status === 'correct' ? -1 : 0),
     }
   },
 

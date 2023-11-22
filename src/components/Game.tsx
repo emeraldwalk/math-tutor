@@ -9,21 +9,45 @@ function initialProblems(): Problem[] {
   const map = {
     2: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18],
     3: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+    4: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
   } as const
 
-  function forN(n: number) {
-    return (i: number) => {
-      return {
-        type: 'multiplication' as 'multiplication',
-        weight: 1,
-        m1: n,
-        m2: i,
-        p: n * i,
-      }
-    }
+  const items = Object.entries(map)
+    .map(([key, values]) =>
+      values.map((v) => [Number(key), v] as [number, number]),
+    )
+    .flat()
+
+  const result: Problem[] = []
+
+  while (items.length) {
+    const j = Math.floor(Math.random() * items.length)
+    const [n, i] = items.splice(j, 1)[0]
+
+    result.push({
+      type: 'multiplication' as 'multiplication',
+      weight: 1,
+      m1: n,
+      m2: i,
+      p: n * i,
+    })
   }
 
-  return [...map['2'].map(forN(2)), ...map['3'].map(forN(3))]
+  return result
+
+  // function forN(n: number) {
+  //   return (i: number) => {
+  //     return {
+  //       type: 'multiplication' as 'multiplication',
+  //       weight: 1,
+  //       m1: n,
+  //       m2: i,
+  //       p: n * i,
+  //     }
+  //   }
+  // }
+
+  // return [...map['2'].map(forN(2)), ...map['3'].map(forN(3))]
 }
 
 export function Game() {
@@ -42,12 +66,12 @@ export function Game() {
     rerun()
   }
 
-  const onRetry = () => {
-    // state.retry()
-    // setAnswer('')
-    // rerun()
-    onNext()
-  }
+  // const onRetry = () => {
+  //   state.retry()
+  //   setAnswer('')
+  //   rerun()
+  //   onNext()
+  // }
 
   const onNext = () => {
     state.markComplete()
@@ -95,14 +119,13 @@ export function Game() {
                 OK
               </button>
             )}
-            {state.status === 'correct' && (
-              <button class="round next" onClick={onNext}>
-                <VsCheck size={48} />
-              </button>
-            )}
-            {state.status === 'incorrect' && (
-              <button class="round retry" onClick={onRetry}>
-                <VsChromeClose size={48} />
+            {state.status !== 'unanswered' && (
+              <button class={`round ${state.status}`} onClick={onNext}>
+                {state.status === 'correct' ? (
+                  <VsCheck size={48} />
+                ) : (
+                  <VsChromeClose size={48} />
+                )}
               </button>
             )}
           </>
@@ -127,9 +150,15 @@ export function Game() {
         </span>
         <span class="status-icon">{state.statusIcon}</span>
         {state.current && (
-          <footer class="scoreboard">
+          <>
             <ScoreCard />
-          </footer>
+            <footer class="footer">
+              <span>High Score {state.highScore}</span>
+              <button class="refresh" onClick={onReset}>
+                <VsRefresh size={20} />
+              </button>
+            </footer>
+          </>
         )}
       </div>
     </form>

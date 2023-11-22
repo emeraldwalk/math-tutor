@@ -42,13 +42,24 @@
   width: var(--size);
   border-radius: var(--size);
 }
-.next {
+.correct {
   background-color: hsl(var(--color-green-800-hsl));
   color: hsl(var(--color-white-hsl));
 }
-.retry {
+.incorrect {
   color: hsl(var(--color-white-hsl));
   background-color: hsl(var(--color-red-800-hsl));
+}
+.refresh {
+  --size: 40px;
+  border: none;
+  background-color: transparent;
+  color: hsl(var(--color-white-hsl));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--size);
+  height: var(--size);
 }
 .play {
   display: flex;
@@ -73,16 +84,19 @@
   }
 }
 .status {
-  height: 40px;
+  height: 20px;
 }
 .status-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   height: 40px;
   font-size: 40px;
 }
-.scoreboard {
+.footer {
   display: flex;
   align-items: center;
-  flex-direction: column;
-  gap: 10px;
-  width: 100%;
+  flex-direction: row;
+  justify-content: space-between;
+  width: calc(100% - 40px);
 }

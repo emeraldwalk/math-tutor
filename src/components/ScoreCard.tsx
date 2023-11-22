@@ -7,8 +7,9 @@ export function ScoreCard() {
       <span>Round {state.rounds.length}</span>
       <span>Score {state.score.score}</span>
       <span>Missed {state.score.missed}</span>
-      <br />
-      <span>High Score {state.highScore}</span>
+      <span>Remaining {state.score.remaining}</span>
+      {/* <br /> */}
+      {/* <span>High Score {state.highScore}</span> */}
     </div>
   )
 }
