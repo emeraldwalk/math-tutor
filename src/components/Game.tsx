@@ -85,7 +85,8 @@ export function Game() {
 
       if (state.autoProgress && state.status !== 'unanswered') {
         const timeout = setTimeout(() => {
-          onNext()
+          // onNext()
+          document.querySelector<HTMLButtonElement>('button.round')?.click()
         }, 1500)
 
         onCleanup(() => clearTimeout(timeout))
