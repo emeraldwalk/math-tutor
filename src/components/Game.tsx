@@ -1,85 +1,40 @@
-import { createEffect, createSignal, on, onCleanup } from 'solid-js'
+import {
+  Match,
+  Switch,
+  createEffect,
+  createSignal,
+  on,
+  onCleanup,
+} from 'solid-js'
 import { state, type Problem } from '../data'
 import './Game.scss'
 import { VsCheck, VsChromeClose, VsRefresh } from 'solid-icons/vs'
 import { ScoreCard } from '.'
-
-function initialProblems(): Problem[] {
-  // return [forN(2)(1), forN(2)(2)]
-  const map = {
-    // 2: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18],
-    // 3: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
-    // 4: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
-    // 5: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
-    6: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
-    7: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
-    8: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
-  } as const
-
-  const items = Object.entries(map)
-    .map(([key, values]) =>
-      values.map((v) => [Number(key), v] as [number, number]),
-    )
-    .flat()
-
-  const result: Problem[] = []
-
-  while (items.length) {
-    const j = Math.floor(Math.random() * items.length)
-    const [n, i] = items.splice(j, 1)[0]
-
-    result.push({
-      type: 'multiplication' as 'multiplication',
-      weight: 1,
-      m1: n,
-      m2: i,
-      p: n * i,
-    })
-  }
-
-  return result
-
-  // function forN(n: number) {
-  //   return (i: number) => {
-  //     return {
-  //       type: 'multiplication' as 'multiplication',
-  //       weight: 1,
-  //       m1: n,
-  //       m2: i,
-  //       p: n * i,
-  //     }
-  //   }
-  // }
-
-  // return [...map['2'].map(forN(2)), ...map['3'].map(forN(3))]
-}
+import { initMultiplicationProblems, initRounds } from '../utils'
 
 export function Game() {
   let inputRef: HTMLInputElement | undefined
   const [depend, rerun] = createSignal(undefined, { equals: false })
   const [answer, setAnswer] = createSignal('')
 
-  const onSubmit = (event: SubmitEvent) => {
-    event.preventDefault()
+  const onCheckProblem = () => {
     state.checkAnswer(Number(inputRef?.value))
     rerun()
   }
 
-  const onReset = () => {
-    state.reset(initialProblems())
+  const onNextProblem = () => {
+    state.markComplete()
+    setAnswer('')
     rerun()
   }
 
-  // const onRetry = () => {
-  //   state.retry()
-  //   setAnswer('')
-  //   rerun()
-  //   onNext()
-  // }
+  const onNextRound = () => {
+    state.nextRound()
+    rerun()
+  }
 
-  const onNext = () => {
-    state.markComplete()
-    setAnswer('')
+  const onReset = () => {
+    state.reset(initRounds())
     rerun()
   }
 
@@ -99,12 +54,12 @@ export function Game() {
   )
 
   return (
-    <form class="game" onSubmit={onSubmit}>
+    <form class="game">
       <div class="game-layout">
-        {state.current != null && (
+        {state.currentProblem != null && (
           <>
             <div class="question">
-              {state.current.m1} x {state.current.m2}
+              {state.currentProblem.m1} x {state.currentProblem.m2}
             </div>
             <input
               class="answer"
@@ -116,37 +71,47 @@ export function Game() {
               value={answer()}
               onInput={(e) => setAnswer(e.currentTarget.value)}
             />
-            {state.status === 'unanswered' && (
-              <button
-                class="round submit"
-                type="submit"
-                disabled={answer() === ''}>
-                OK
-              </button>
-            )}
-            {state.status !== 'unanswered' && (
-              <button class={`round ${state.status}`} onClick={onNext}>
-                {state.status === 'correct' ? (
+            <button
+              class={`round ${state.status}`}
+              disabled={state.status === 'unanswered' && answer() === ''}
+              onClick={
+                state.status === 'unanswered' ? onCheckProblem : onNextProblem
+              }>
+              <Switch>
+                <Match when={state.status === 'unanswered'}>OK</Match>
+                <Match when={state.status === 'correct'}>
                   <VsCheck size={48} />
-                ) : (
+                </Match>
+                <Match when={state.status === 'incorrect'}>
                   <VsChromeClose size={48} />
-                )}
-              </button>
-            )}
+                </Match>
+              </Switch>
+            </button>
           </>
         )}
-        {state.current == null && (
+        {!state.isRoundActive && (
           <>
             {state.rounds.length ? <ScoreCard /> : null}
-            <button class="play" onClick={onReset}>
-              {state.rounds.length ? (
-                <>
-                  Play Again
-                  <VsRefresh size={20} />
-                </>
-              ) : (
-                'Play'
-              )}
+            <button
+              class="play"
+              onClick={
+                state.isGameStart || state.isGameOver ? onReset : onNextRound
+              }>
+              <Switch>
+                <Match when={state.isGameStart}>Play</Match>
+                <Match when={state.isGameOver}>
+                  <>
+                    Play Again
+                    <VsRefresh size={20} />
+                  </>
+                </Match>
+                <Match when={!state.isGameStart && !state.isGameOver}>
+                  <>
+                    Next Round
+                    {/* <VsRefresh size={20} /> */}
+                  </>
+                </Match>
+              </Switch>
             </button>
           </>
         )}
@@ -154,7 +119,7 @@ export function Game() {
           {state.status !== 'unanswered' && state.status}
         </span>
         <span class="status-icon">{state.statusIcon}</span>
-        {state.current && (
+        {state.currentProblem && (
           <>
             <ScoreCard />
             <footer class="footer">

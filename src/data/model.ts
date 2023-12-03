@@ -12,4 +12,5 @@ export interface Round {
   correct: number
   incorrect: number
   score: number
+  remaining: Problem[]
 }

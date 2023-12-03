@@ -9,17 +9,37 @@ const LOCAL_STORAGE_SCORE_KEY = 'math-tutor.score'
 
 export const [state, setState] = createStore({
   autoProgress: true,
-  remaining: [] as Problem[],
   rounds: [] as Round[],
+  roundI: 0,
 
   status: 'unanswered' as 'unanswered' | 'correct' | 'incorrect',
 
-  get current(): Problem | undefined {
-    return this.remaining[0]
-  },
-
   get highScore(): number {
     return Number(localStorage.getItem(LOCAL_STORAGE_SCORE_KEY) || '0')
+  },
+
+  get currentRound(): Round | undefined {
+    return this.rounds[this.roundI]
+  },
+
+  get remainingProblems(): Problem[] {
+    return this.currentRound?.remaining ?? []
+  },
+
+  get currentProblem(): Problem | undefined {
+    return this.remainingProblems[0]
+  },
+
+  get isGameStart(): boolean {
+    return this.rounds.length === 0
+  },
+
+  get isGameOver(): boolean {
+    return this.roundI === this.rounds.length - 1 && this.currentProblem == null
+  },
+
+  get isRoundActive(): boolean {
+    return this.currentProblem != null
   },
 
   get score(): {
@@ -29,12 +49,12 @@ export const [state, setState] = createStore({
     score: number
     remaining: number
   } {
-    const round = this.rounds.at(-1)
+    const round = this.currentRound
     if (round == null) {
       return { answered: 0, missed: 0, total: 0, score: 0, remaining: 0 }
     }
 
-    const weight = this.current?.weight ?? 0
+    const weight = this.currentProblem?.weight ?? 0
 
     return {
       answered: round.correct + (this.status === 'correct' ? 1 : 0),
@@ -43,7 +63,8 @@ export const [state, setState] = createStore({
       score:
         round.score +
         (this.status === 'correct' ? FULL_QUESTION_SCORE * weight : 0),
-      remaining: this.remaining.length + (this.status === 'correct' ? -1 : 0),
+      remaining:
+        this.remainingProblems.length + (this.status === 'correct' ? -1 : 0),
     }
   },
 
@@ -61,7 +82,7 @@ export const [state, setState] = createStore({
   },
 
   checkAnswer(answer: number): boolean {
-    const problem = this.remaining[0]
+    const problem = this.currentProblem
 
     if (problem == null) {
       return false
@@ -79,7 +100,7 @@ export const [state, setState] = createStore({
   },
 
   markComplete() {
-    const current = this.remaining[0]
+    const current = this.currentProblem
 
     if (current == null) {
       return
@@ -90,7 +111,7 @@ export const [state, setState] = createStore({
     setState('status', 'unanswered')
 
     // Update current round
-    setState('rounds', this.rounds.length - 1, (prev) => {
+    setState('rounds', this.roundI, (prev) => {
       if (isCorrect) {
         return {
           ...prev,
@@ -102,7 +123,8 @@ export const [state, setState] = createStore({
       return { ...prev, incorrect: prev.incorrect + 1 }
     })
 
-    setState('remaining', (prev) => {
+    // Update remaining problems in current round
+    setState('rounds', this.roundI, 'remaining', (prev) => {
       const first = prev[0]
 
       // If answer is incorrect, remove first item and decrease the weight of last
@@ -114,7 +136,7 @@ export const [state, setState] = createStore({
       return prev.slice(1)
     })
 
-    if (this.remaining.length === 0) {
+    if (this.remainingProblems.length === 0) {
       const lastHighScore = this.highScore
       const highScore = this.rounds.at(-1)?.score ?? 0
       localStorage.setItem(
@@ -124,12 +146,12 @@ export const [state, setState] = createStore({
     }
   },
 
-  reset(initialProblems: Problem[]) {
-    setState('rounds', (rounds) => [
-      ...rounds,
-      { correct: 0, incorrect: 0, score: 0 },
-    ])
-    setState('remaining', initialProblems)
+  nextRound() {
+    setState('roundI', (i) => i + 1)
+  },
+
+  reset(initialRounds: Round[]) {
+    setState('rounds', initialRounds)
   },
 
   retry() {
